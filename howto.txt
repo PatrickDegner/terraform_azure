@@ -1,38 +1,60 @@
-# Log in to Azure (if not already logged in)
-az login
-
-# Set variables (adjust as needed)
-SUBSCRIPTION_ID="your-subscription-id"
+# Set variables
+LOCATION="West Europe" # Or your preferred region
+SUBSCRIPTION_ID="d866ec5d-0016-4b05-acd4-1a77aafcfef9" # Your Azure subscription ID
 RESOURCE_GROUP="terraform-state-rg-patrick"
-LOCATION="West Europe"
+STORAGE_ACCOUNT_NAME="tfstatepatrick" # Must be globally unique
+CONTAINER_NAME="tfstate"
 IDENTITY_NAME="GitHubActionsIdentity"
-GITHUB_ORG="PatrickDegner"
-GITHUB_REPO="terraform_azure"
-ENVIRONMENT_NAME="production"
+GITHUB_ORG="PatrickDegner" # Your Github UserName
+GITHUB_REPO="erraform_azure" # Your RepoName
+ENVIRONMENT_NAME="Production" # Your EnvironmentName e.g., production, staging, dev
 FEDERATED_CREDENTIAL_NAME="GitHubActionsIdentityCred"
+
+# Log in to Azure
+az login
 
 # Set the subscription
 az account set --subscription $SUBSCRIPTION_ID
 
-# Create the resource group if it doesn't exist
-az group create --location $LOCATION --name $RESOURCE_GROUP
+# 1. Create the resource group
+az group create --location "$LOCATION" --name $RESOURCE_GROUP
 
-# Create the user-assigned managed identity if it doesn't exist
-az identity create --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION
+# 2. Create the storage account
+az storage account create \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location "$LOCATION" \
+  --sku Standard_LRS \
+  --kind StorageV2
 
-# Get the Principal ID of the managed identity
+# 3. Create the storage container
+az storage container create \
+  --account-name $STORAGE_ACCOUNT_NAME \
+  --name $CONTAINER_NAME \
+  --public-access off  # Ensure the container is private
+
+# 4. Create a user-assigned managed identity
+az identity create --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --location "$LOCATION"
+
+# 5. Get the Principal ID of the managed identity
 PRINCIPAL_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query principalId --output tsv)
 
-# Get the ID of the resource group
+# 6. Get the Client ID of the managed identity
+CLIENT_ID=$(az identity show --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --query clientId --output tsv)
+
+# 7. Get the Tenant ID
+TENANT_ID=$(az account show --query tenantId --output tsv)
+
+# 8. Get the ID of the resource group
 RESOURCE_GROUP_ID=$(az group show --name $RESOURCE_GROUP --query id --output tsv)
 
-# Assign the "Contributor" role to the managed identity at the resource group scope
+# 9. Assign the "Contributor" role to the managed identity at the resource group scope
 az role assignment create --assignee-object-id $PRINCIPAL_ID --assignee-principal-type ServicePrincipal --role "Contributor" --scope $RESOURCE_GROUP_ID
 
-# Assign the "Storage Blob Data Contributor" role to the managed identity at the resource group scope
+# 10. Assign the "Storage Blob Data Contributor" role to the managed identity at the resource group scope
 az role assignment create --assignee-object-id $PRINCIPAL_ID --assignee-principal-type ServicePrincipal --role "Storage Blob Data Contributor" --scope $RESOURCE_GROUP_ID
 
-# Create the federated identity credential
+# 11. Create the federated identity credential
 az identity federated-credential create \
   --name $FEDERATED_CREDENTIAL_NAME \
   --identity-name $IDENTITY_NAME \

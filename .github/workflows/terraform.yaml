@@ -17,7 +17,7 @@ env:
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   ARM_USE_AZUREAD: true
   resource_group_name: "terraform-state-rg-patrick"
-  storage_account_name: "terraformstatepatrick"
+  storage_account_name: "tfstatepatrick"
   container_name: "tfstate"
 
 jobs:
