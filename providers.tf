@@ -14,11 +14,11 @@ terraform {
     storage_account_name = "terraformstatepatrick"
     container_name       = "tfstate"
     key                  = "terraform.tfstate"
-    use_oidc             = true
+    use_msi              = true
   }
 }
 
 provider "azurerm" {
   features {}
-  use_oidc = true
+  use_msi = true
 }
