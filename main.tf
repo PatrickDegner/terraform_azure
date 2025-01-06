@@ -8,6 +8,6 @@ resource "azurerm_storage_account" "test_storage_account" {
 
 resource "azurerm_storage_container" "test_storage_container" {
   name                  = "testcontainer01patrick"
-  storage_account_id    = test_storage_account.test_account.id
+  storage_account_id    = azurerm_storage_account.test_storage_account.id
   container_access_type = "private"
 }
