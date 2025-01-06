@@ -1,36 +1,61 @@
-# Log in to Azure
+# Log in to Azure (if not already logged in)
 az login
 
-# Create an Azure AD application
-APPLICATION_NAME="GitHubActionsTerraform"
-APPLICATION_ID=$(az ad app create --display-name $APPLICATION_NAME --query appId --output tsv)
+# Set variables (adjust as needed)
+RESOURCE_GROUP="terraform-state-rg-patrick" # Your resource group
+LOCATION="West Europe" # Your preferred region
+IDENTITY_NAME="GitHubActionsIdentity"
 
-# Create a service principal for the application
-az ad sp create --id $APPLICATION_ID
+# Create the user-assigned managed identity
+az identity create --name $IDENTITY_NAME --resource-group $RESOURCE_GROUP --location $LOCATION
 
-# Create environment
-Go to your repository on GitHub.
-Click on Settings.
-In the left sidebar, click on Environments.
-Click on New environment.
-Give your environment a name (e.g., development, staging, production).
-Configure the environment:
-Environment secrets: Add any secrets that should be available to workflows targeting this environment.
-Environment protection rules: Define any rules like required reviewers, wait timers, or allowed branches.
+# --- Option 1: Assign permissions to the resource group ---
 
+# Get the resource group ID
+RESOURCE_GROUP_ID=$(az group show --name $RESOURCE_GROUP --query id --output tsv)
 
-# Create federated credentials
-az ad app federated-credential create --id $APPLICATION_ID --parameters  '{
-  "name": "GitHubActionsFederatedCredential",
-  "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:PatrickDegner/terraform_azure:environment:production",
-  "audiences": [
-    "api://AzureADTokenExchange"
-  ]
-}'
+# Assign the "Storage Blob Data Contributor" role to the managed identity at the resource group scope
+az role assignment create --assignee-object-id <principalId> --assignee-principal-type ServicePrincipal --role "Storage Blob Data Contributor" --scope $RESOURCE_GROUP_ID
 
-# Assign a role to the service principal (e.g., Contributor on your subscription or resource group)
-SUBSCRIPTION_ID=$(az account show --query id --output tsv)
-RESOURCE_GROUP_NAME="terraform-state-rg-patrick" # Use your actual resource group name if you want to limit permissions
-SCOPE="/subscriptions/$SUBSCRIPTION_ID" # Or: "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME"
-az role assignment create --assignee $APPLICATION_ID --role "Contributor" --scope $SCOPE
+# --- Option 2: Assign permissions to the storage account directly (more restrictive) ---
+STORAGE_ACCOUNT_NAME="terraformstatepatrick" # Your storage account name
+
+# Get the storage account ID
+STORAGE_ACCOUNT_ID=$(az storage account show --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCE_GROUP --query id --output tsv)
+
+# Assign the "Storage Blob Data Contributor" role to the managed identity at the storage account scope
+az role assignment create --assignee-object-id <principalId> --assignee-principal-type ServicePrincipal --role "Storage Blob Data Contributor" --scope $STORAGE_ACCOUNT_ID
+
+Create a Federated Identity Credential
+
+Now, you need to establish trust between the managed identity and your GitHub Actions environment using a federated identity credential. This allows GitHub Actions to authenticate as the managed identity.
+
+Set variables
+
+Bash
+
+IDENTITY_NAME="GitHubActionsIdentity"
+GITHUB_ORG="PatrickDegner"
+GITHUB_REPO="terraform_azure"
+RESOURCE_GROUP="terraform-state-rg-patrick"
+ENVIRONMENT_NAME="production"
+IDENTITY_CRED="GitHubActionsIdentityCred"
+
+Get Object ID of managed identity:
+Bash
+OBJECT_ID=$(az identity show --name GitHubActionsIdentity --resource-group terraform-state-rg-patrick --query "principalId" --output tsv)
+Create federated identity credential:
+
+az identity federated-credential create \
+  --name=GitHubActionsIdentityCred \
+  --identity-name GitHubActionsIdentity \
+  --resource-group terraform-state-rg-patrick \
+  --issuer https://token.actions.githubusercontent.com \
+  --subject "repo:PatrickDegner/terraform_azure:environment:production" \
+  --audiences "api://AzureADTokenExchange"
+
+# Create the federated credential using the file
+az ad app federated-credential create --id $OBJECT_ID --parameters "@federated_credential.json"
+
+# Remove the temporary file (optional)
+rm federated_credential.json
