@@ -16,10 +16,7 @@ env:
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   ARM_USE_AZUREAD: true
-  resource_group_name: "terraform-state-rg-patrick"
-  storage_account_name: "tfstatepatrick"
-  container_name: "tfstate"
-
+  
 jobs:
   terraform:
     name: Terraform
@@ -37,21 +34,9 @@ jobs:
         id: fmt
         run: terraform fmt -check
 
-      - name: Debug Output
-        run: |
-          echo "AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}"
-          echo "AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}"
-          echo "AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          echo "RESOURCE_GROUP_NAME: ${{ env.resource_group_name }}"
-          echo "STORAGE_ACCOUNT_NAME: ${{ env.storage_account_name }}"
-          echo "CONTAINER_NAME: ${{ env.container_name }}"
-      
-      - name: Terraform Init
-        run: terraform init -reconfigure
-
       - name: Terraform Init
         id: init
-        run: terraform init -backend-config="resource_group_name=${{env.resource_group_name}}" -backend-config="storage_account_name=${{env.storage_account_name}}" -backend-config="container_name=${{env.container_name}}"
+        run: terraform init
 
       - name: Terraform Validate
         id: validate
