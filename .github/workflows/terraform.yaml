@@ -7,13 +7,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
+  id-token: write
+  pull-requests: write
 
 env:
-  RESOURCE_GROUP_NAME: terraform-state-rg-patrick
-  STORAGE_ACCOUNT_NAME: terraformstatepatrick
-  CONTAINER_NAME: tfstate
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_AZUREAD: true
+  resource_group_name: "terraform-state-rg-patrick"
+  storage_account_name: "terraformstatepatrick"
+  container_name: "tfstate"
 
 jobs:
   terraform:
@@ -22,27 +27,24 @@ jobs:
     environment: production
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: latest # Or specify a specific version
+
+      - name: Terraform Fmt
+        id: fmt
+        run: terraform fmt -check
 
       - name: Terraform Init
-        run: terraform init
+        id: init
+        run: terraform init -backend-config="resource_group_name=${{env.resource_group_name}}" -backend-config="storage_account_name=${{env.storage_account_name}}" -backend-config="container_name=${{env.container_name}}"
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
 
       - name: Terraform Plan
-        run: terraform plan
-
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve
+        id: plan
+        run: terraform plan -no-color
