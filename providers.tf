@@ -9,7 +9,7 @@ terraform {
   backend "azurerm" {
     resource_group_name  = "terraform-state-rg-patrick"
     storage_account_name = "tfstatepatrick"
-    container_name       = "tfstate"
+    container_name       = "tfstatesimple"
     key                  = "terraform.tfstate"
     use_oidc             = true
   }
