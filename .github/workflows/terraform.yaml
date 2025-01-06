@@ -42,10 +42,9 @@ jobs:
           echo "AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}"
           echo "AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}"
           echo "AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          echo "RESOURCE_GROUP_NAME: ${{ env.RESOURCE_GROUP_NAME }}"
-          echo "STORAGE_ACCOUNT_NAME: ${{ env.STORAGE_ACCOUNT_NAME }}"
-          echo "CONTAINER_NAME: ${{ env.CONTAINER_NAME }}"
-          echo "IDENTITY_NAME: ${{ env.IDENTITY_NAME }}"
+          echo "RESOURCE_GROUP_NAME: ${{ env.resource_group_name }}"
+          echo "STORAGE_ACCOUNT_NAME: ${{ env.storage_account_name }}"
+          echo "CONTAINER_NAME: ${{ env.container_name }}"
       
       - name: Terraform Init
         run: terraform init -reconfigure
