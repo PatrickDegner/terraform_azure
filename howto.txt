@@ -1,0 +1,36 @@
+# Log in to Azure
+az login
+
+# Create an Azure AD application
+APPLICATION_NAME="GitHubActionsTerraform"
+APPLICATION_ID=$(az ad app create --display-name $APPLICATION_NAME --query appId --output tsv)
+
+# Create a service principal for the application
+az ad sp create --id $APPLICATION_ID
+
+# Create environment
+Go to your repository on GitHub.
+Click on Settings.
+In the left sidebar, click on Environments.
+Click on New environment.
+Give your environment a name (e.g., development, staging, production).
+Configure the environment:
+Environment secrets: Add any secrets that should be available to workflows targeting this environment.
+Environment protection rules: Define any rules like required reviewers, wait timers, or allowed branches.
+
+
+# Create federated credentials
+az ad app federated-credential create --id $APPLICATION_ID --parameters  '{
+  "name": "GitHubActionsFederatedCredential",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:PatrickDegner//terraform_azure:environment:production",
+  "audiences": [
+    "api://AzureADTokenExchange"
+  ]
+}'
+
+# Assign a role to the service principal (e.g., Contributor on your subscription or resource group)
+SUBSCRIPTION_ID=$(az account show --query id --output tsv)
+RESOURCE_GROUP_NAME="terraform-state-rg-patrick" # Use your actual resource group name if you want to limit permissions
+SCOPE="/subscriptions/$SUBSCRIPTION_ID" # Or: "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME"
+az role assignment create --assignee $APPLICATION_ID --role "Contributor" --scope $SCOPE
