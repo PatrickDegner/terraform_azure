@@ -9,15 +9,3 @@ variable "location" {
   type        = string
   default     = "West Europe"
 }
-
-variable "storage_account_name" {
-  description = "The name of the storage account"
-  type        = string
-  default     = "terraformstatepatrick"
-}
-
-variable "container_name" {
-  description = "The name of the storage container"
-  type        = string
-  default     = "tfstate"
-}
