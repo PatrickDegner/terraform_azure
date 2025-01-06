@@ -19,7 +19,7 @@ jobs:
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
-    environment: your-environment-name # if you have defined one
+    environment: production
     
     steps:
       - name: Checkout Repository
