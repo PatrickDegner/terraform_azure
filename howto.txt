@@ -23,7 +23,7 @@ Environment protection rules: Define any rules like required reviewers, wait tim
 az ad app federated-credential create --id $APPLICATION_ID --parameters  '{
   "name": "GitHubActionsFederatedCredential",
   "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:PatrickDegner//terraform_azure:environment:production",
+  "subject": "repo:PatrickDegner/terraform_azure:environment:production",
   "audiences": [
     "api://AzureADTokenExchange"
   ]
