@@ -6,7 +6,6 @@ terraform {
     }
   }
 
-  # Configure the Remote Backend
   backend "azurerm" {
     key      = "terraform.tfstate"
     use_oidc = true
